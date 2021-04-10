@@ -1,6 +1,6 @@
 /**
- * Logger
- * Copyright (c) 2020 clausgf@github. See LICENSE.md for legal information.
+ * Logger for 32 Bit Microcontrollers
+ * Copyright (c) 2021 clausgf@github. See LICENSE.md for legal information.
  */
 
 #include <stdint.h>
