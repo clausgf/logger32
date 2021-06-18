@@ -12,15 +12,14 @@
     [
         {
             "name": "Claus",
-            "email": "clausgf@googlemail.com",
             "url": "https://github.com/clausgf",
             "maintainer": true
         }
-],
+    ],
     "license": "MIT",
     "homepage": "https://github.com/clausgf/logger32/",
     "dependencies": {
     },
-    "frameworks": "arduino, espidf",
+    "frameworks": ["arduino", "espidf"],
     "platforms": "*"
 }

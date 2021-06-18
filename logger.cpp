@@ -3,21 +3,12 @@
  * Copyright (c) 2021 clausgf@github. See LICENSE.md for legal information.
  */
 
-#include <stdint.h>
-#include <cstdio>
-#include <cstdarg>
+#include <cstdint>
 
 #ifdef ARDUINO
     #include <Arduino.h>
 #elif ESP32
     #include <FreeRTOS.h>
-    extern "C" {
-    #include <lwip/sockets.h>
-    #include <lwip/netdb.h>
-    #include <errno.h>
-    }
-    #include <esp_log.h>
-    static const char* module_tag = "log";
 #else
     #error "Architecture/Framework is not supported. Supported: ESP32 (IDF and Arduino)"
 #endif
@@ -27,7 +18,9 @@
 
 // ***************************************************************************
 
-const char* SerialLogHandler::_color_strings[] = 
+const char* LogHandler::_EMPTY_STRING = "";
+
+const char* LogHandler::_COLOR_STRINGS[] = 
 {
     /*0:UNDEFINED*/"\u001b[0m",  // reset
     /*1:DEBUG*/    "\u001b[36m", // cyan
@@ -37,16 +30,45 @@ const char* SerialLogHandler::_color_strings[] =
     /*5:CRITICAL*/ "\u001b[35m", // magenta
 };
 
+const char* LogHandler::colorStartStr(Logger::LogLevel level) const
+{
+    if (!_color)
+    {
+        return _EMPTY_STRING;
+    }
+
+    // determine color
+    int color_index = ((int) level) / 10;
+    if (color_index >= sizeof(_COLOR_STRINGS))
+    {
+        color_index = sizeof(_COLOR_STRINGS) - 1;
+    }
+    return _color_strings[color_index];
+}
+
+const char* LogHandler::colorEndStr() const
+{
+    if (!_color)
+    {
+        return _EMPTY_STRING;
+    }
+    return _COLOR_STRINGS[0];
+}
+
+// ***************************************************************************
+
 SerialLogHandler::SerialLogHandler(bool color, unsigned long baudRate):
-    _color(color)
+    LogHandler(color)
 {
     if (baudRate > 0)
     {
+        #ifdef ARDUINO
         Serial.begin(baudRate);
+        #endif
     }
 }
 
-void SerialLogHandler::write(Logger::LogLevel level, const char *tag, const char *message, int messageLength)
+void SerialLogHandler::write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength)
 {
     unsigned long ms = 0;
 #ifdef ARDUINO
@@ -55,48 +77,67 @@ void SerialLogHandler::write(Logger::LogLevel level, const char *tag, const char
     ms = xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
 #endif
 
-    // determine color
-    int color_index = ((int) level) / 10;
-    if (color_index >= sizeof(_color_strings))
-    {
-        color_index = sizeof(_color_strings) - 1;
-    }
-
 #ifdef ARDUINO
-    Serial.printf("%s%lu.%03lu:%02d:%s:%s%s\n", 
-        _color ? _color_strings[color_index] : "",
+    Serial.print(colorStartStr(level));
+    Serial.printf("%lu.%03lu:%02d:%s:%s:%s", 
         ms / 1000, ms % 1000, 
         level,
+        deviceId == nullptr ? "" : deviceId,
         tag == nullptr ? "" : tag,
-        message,
-        _color ? _color_strings[0] : "");
+        message);
+    Serial.println(colorEndStr());
 #elif ESP32
-    printf("%s%lu.%03lu:%02d:%s:%s%s\n", 
-        _color ? _color_strings[color_index] : "",
+    printf("%s%lu.%03lu:%02d:%s:%s:%s%s\n", 
+        colorStartStr(level),
         ms / 1000, ms % 1000, 
         level,
+        deviceId == nullptr ? "" : deviceId,
         tag == nullptr ? "" : tag,
         message,
-        _color ? _color_strings[0] : "");
+        colorEndStr());
 #endif
 }
 
 // ***************************************************************************
 
-Logger::Logger(const char* tagPtr, LogHandler* logHandlerPtr):
+Logger::Logger(const char* tag, LogHandler* logHandlerPtr):
     _level(NOTSET),
     _parentLogger(nullptr),
-    _tag(tagPtr), 
+    _deviceId(nullptr),
+    _tag(tag), 
     _logHandlerPtr(logHandlerPtr)
 {
 }
 
-Logger::Logger(const char* tagPtr, const Logger& parentLogger):
+Logger::Logger(const char* tag, const Logger& parentLogger):
     _level(NOTSET), 
     _parentLogger(&parentLogger),
-    _tag(tagPtr), 
+    _deviceId(nullptr),
+    _tag(tag), 
     _logHandlerPtr(parentLogger._logHandlerPtr)
 {
+}
+
+void Logger::setDeviceId(const char* deviceId);
+{
+    _deviceId = deviceId;
+}
+
+const char* Logger::getDeviceId() const
+{
+    const char* deviceId = _deviceId;
+    const Logger* parentLogger = _parentLogger;
+    while (deviceId == nullptr && parentLogger != nullptr)
+    {
+        deviceId = parentLogger->_deviceId;
+        parentLogger = parentLogger->_parentLogger;
+    }
+    return deviceId;
+}
+
+void Logger::setLevel(LogLevel level)
+{
+    _level = level;
 }
 
 Logger::LogLevel Logger::getLevel() const
@@ -111,10 +152,10 @@ Logger::LogLevel Logger::getLevel() const
     return level;
 }
 
-void Logger::logv(LogLevel level, const char* format, va_list ap)
+void Logger::logv(LogLevel level, const char* format, va_list ap) const
 {
-    constexpr int buflen = 1024;
-    char buffer[buflen];
+    constexpr int BUFLEN = 256;
+    char buffer[BUFLEN];
 
     if (_logHandlerPtr == nullptr)
     {
@@ -123,47 +164,53 @@ void Logger::logv(LogLevel level, const char* format, va_list ap)
 
     if (level >= getLevel())
     {
-        int len = vsnprintf(buffer, buflen-1, format, ap);
-        _logHandlerPtr->write(level, _tag, buffer, len);
+        int len = vsnprintf(buffer, BUFLEN-1, format, ap);
+        _logHandlerPtr->write(level, getDeviceId(), gettag(), buffer, len);
     }
 }
 
-void Logger::logf(LogLevel level, const char* format...) {
+void Logger::logf(LogLevel level, const char* format...) const
+{
     va_list args;
     va_start(args, format);
     logv(level, format, args);
     va_end(args);
 }
 
-void Logger::critical(const char* format...) {
+void Logger::critical(const char* format...) const
+{
     va_list args;
     va_start(args, format);
     logv(CRITICAL, format, args);
     va_end(args);
 }
 
-void Logger::error(const char* format...) {
+void Logger::error(const char* format...) const
+{
     va_list args;
     va_start(args, format);
     logv(ERROR, format, args);
     va_end(args);
 }
 
-void Logger::warn(const char* format...) {
+void Logger::warn(const char* format...) const
+{
     va_list args;
     va_start(args, format);
     logv(WARNING, format, args);
     va_end(args);
 }
 
-void Logger::info(const char* format...) {
+void Logger::info(const char* format...) const
+{
     va_list args;
     va_start(args, format);
     logv(INFO, format, args);
     va_end(args);
 }
 
-void Logger::debug(const char* format...) {
+void Logger::debug(const char* format...) const
+{
     va_list args;
     va_start(args, format);
     logv(DEBUG, format, args);

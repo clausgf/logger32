@@ -25,65 +25,66 @@ public:
      * Construct a new Logger with no parent Logger
      * 
      * Use this constructor for your root Logger.
-     * @param tagPtr  Pointer to C string containing a tag. The tag can be used later 
-     *                to identify this logger. In a LogHandler, it can also be added 
-     *                to the log output (like in the default SerialLogHandler does).
-     *                Warning: The tag is not copied, so make sure that the memory
-     *                managed by this pointer is always available while using 
-     *                this Logger (i.e. do not put it on the stack).
+     * @param tag  Pointer to C string containing a tag. The tag can be used later 
+     *             to identify this logger. In a LogHandler, it can also be added 
+     *             to the log output (like in the default SerialLogHandler does).
+     * 
+     *             *Warning:* The tag is not copied, so make sure that the memory
+     *             managed by this pointer is always available while using 
+     *             this Logger (i.e. do not put it on the stack).
      * @param logHandlerPtr  Pointer to the LogHandler which is used for output.
      */
-    Logger(const char* tagPtr, LogHandler* logHandlerPtr);
+    Logger(const char* tag, LogHandler* logHandlerPtr);
 
     /**
      * Construct a new Logger with a parent Logger
      * 
      * Use this constructor to derive a new Logger form a parent logger
-     * like `rootLogger` or its descendants.
-     * @param tagPtr  Pointer to C string containing a tag. The tag can be used later 
-     *                to identify this logger. In a LogHandler, it can also be added 
-     *                to the log output (like in the default SerialLogHandler does).
-     *                Warning: The tag is not copied, so make sure that the memory
-     *                managed by this pointer is always available while using 
-     *                this Logger (i.e. do not put it on the stack).
+     * like `rootLogger` or its descendants. The deviceId is always inherited
+     * from the parent.
+     * @param tag  Pointer to C string containing a tag. The tag can be used later 
+     *             to identify this logger. In a LogHandler, it can also be added 
+     *             to the log output (like in the default SerialLogHandler does).
+     * 
+     *             *Warning:* The tag is not copied, so make sure that the memory
+     *             managed by this pointer is always available while using 
+     *             this Logger (i.e. do not put it on the stack).
      * @param parentLogger  Reference to the parent logger. The LogHandler
      *                      is copied from the parent, and the log level
      *                      is derived from it if the own log level is UNSET.
      */
-    Logger(const char *tagPtr, const Logger& parentLogger);
+    Logger(const char* tag, const Logger& parentLogger);
 
     /**
-     * Set the LogHandler for this Logger.
-     */
-    void setLogHandlerPtr(LogHandler* logHandlerPtr)
-    {
-        _logHandlerPtr = logHandlerPtr;
-    }
-
-    /**
-     * Get the LogHandler for this Logger.
-     */
-    LogHandler* getLogHandlerPtr()
-    {
-        return _logHandlerPtr;
-    }
-
-    /**
-     * Set the tag of this logger
-     * @param tagPtr  Pointer to C string containing a tag. The tag can be used later 
-     *                to identify this logger. In a LogHandler, it can also be added 
-     *                to the log output (like, e.g.,in the default SerialLogHandler).
+     * Set the device Id of this logger
+     * @param deviceId  Pointer to C string containing a device id.
+     *                     In a LogHandler, the device id could or could not be
+     *                     added to the log output (e.g. in the default 
+     *                     `SyslogLogHandler`). Usually, deviceId is defined 
+     *                     only for the `rootLogger`.
      * 
-     *                Warning: The tag is not copied, so make sure that the memory
-     *                managed by this pointer is always available while using 
-     *                this Logger (i.e. do not put it on the stack).
+     *                *Warning:* The deviceId is not copied, so make sure that 
+     *                the memory managed by this pointer is always available 
+     *                while using this Logger (i.e. do not put it on the stack).
      */
-    void setTag(const char *tag) { _tag = tag; }
+    void setDeviceId(const char* deviceId);
+
+    /**
+     * Get the device id for this logger.
+     * 
+     * If a Logger's device id is not set (nullptr), it inherits
+     * it's parent logger's device is. Usually, only the root logger
+     * has the devices id.
+     * 
+     * The device id determination is dynamic to make a change in the 
+     * root logger device id visible to all children inheriting from there.
+     */
+    const char* getDeviceId() const;
 
     /**
      * Get the tag for this logger
      */
-    const char *getTag() { return _tag; }
+    const char const* getTag() const { return _tag; }
 
     /**
      * Set log level, all output with a lower level is discarded.
@@ -103,30 +104,34 @@ public:
      * the logger inherits it's parent logger's level. The ancestors
      * of the Loggers are investigated until either a log level >
      * Logger::NOTSET is found the or root logger is hit.
+     * 
+     * The log level determination is dynamic to make a change in the 
+     * root logger's log level visible to all children inheriting from there.
      */
     LogLevel getLevel() const;
 
     /**
      * Log output with given level, format and arguments referenced by ap.
      */
-    void logv(LogLevel level, const char* format, va_list ap);
+    void logv(LogLevel level, const char* format, va_list ap) const;
 
     /**
      * Log output with given level, format and printf()-style arguments.
      */
-    void logf(LogLevel level, const char* format...);
+    void logf(LogLevel level, const char* format...) const;
 
     // --- logging helpers ---
-    void critical(const char* format...);
-    void error(const char* format...);
-    void warn(const char* format...);
-    void info(const char* format...);
-    void debug(const char* format...);
+    void critical(const char* format...) const;
+    void error(const char* format...) const;
+    void warn(const char* format...) const;
+    void info(const char* format...) const;
+    void debug(const char* format...) const;
 
 private:
     LogLevel _level = NOTSET;
     const Logger* _parentLogger;
-    const char *_tag;
+    const char *_deviceId;
+    const char const *_tag;
     LogHandler* _logHandlerPtr;
 };
 
@@ -144,12 +149,25 @@ private:
 class LogHandler
 {
 public:
+    /**
+     * Construct a LogHandler 
+     * @param color  If `true`, use ANSI colors in the log output.
+     */
+    LogHandler(bool color = true)
     virtual ~LogHandler() {}
     virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength) = 0;
+
+protected:
+    const char* colorStartStr(Logger::LogLevel level) const;
+    const char* colorEndStr() const;
+
+private:
+    bool _color;
+    static const char* _EMPTY_STRING;
+    static const char* _COLOR_STRINGS[];
 };
 
 // ***************************************************************************
-
 
 /**
  * Concrete LogHandler for the serial interface
@@ -162,13 +180,29 @@ public:
      * @param color  If `true`, use ANSI colors in the log output.
      * @param baudRate  If baudRate != 0, initialize the serial interface.
      */
-    SerialLogHandler(bool color = true, unsigned long baudRate = 0);
+    SerialLogHandler(unsigned long baudRate = 0);
 
     virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength);
 
-private:
-    bool _color;
-    static const char* _color_strings[];
+};
+
+// ***************************************************************************
+
+/**
+ * Concrete LogHandler for a syslog server via UDP
+ */
+class SyslogLogHandler: public LogHandler
+{
+public:
+    /**
+     * Construct a SyslogLogHandler 
+     * @param color  If `true`, use ANSI colors in the log output.
+     * @param baudRate  If baudRate != 0, initialize the serial interface.
+     */
+    SerialLogHandler(unsigned long baudRate = 0);
+
+    virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength);
+
 };
 
 // ***************************************************************************
