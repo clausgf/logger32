@@ -5,18 +5,20 @@
 
 #include <cstdint>
 
-#ifdef ARDUINO
-    #include <WiFiUdp.h>
-#else
-    #error "Architecture/Framework is not supported. Supported: ESP32 (IDF and Arduino)"
-#endif
+//#ifdef ARDUINO
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
+//#else
+//    #error "Architecture/Framework is not supported. Supported: ESP32 (IDF and Arduino)"
+//#endif
 
 #include "syslog_handler.h"
 
 
 // ***************************************************************************
 
-const char* LogHandler::_LEVEL_MAPPING[] = 
+const char* SyslogHandler::_LEVEL_MAPPING[] = 
 {
     /*0:UNDEFINED*/7, // reset
     /*1:DEBUG*/    7, // 7=debug

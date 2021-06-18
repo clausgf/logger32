@@ -43,7 +43,7 @@ const char* LogHandler::colorStartStr(Logger::LogLevel level) const
     {
         color_index = sizeof(_COLOR_STRINGS) - 1;
     }
-    return _color_strings[color_index];
+    return _COLOR_STRINGS[color_index];
 }
 
 const char* LogHandler::colorEndStr() const
@@ -118,11 +118,6 @@ Logger::Logger(const char* tag, const Logger& parentLogger):
 {
 }
 
-void Logger::setDeviceId(const char* deviceId);
-{
-    _deviceId = deviceId;
-}
-
 const char* Logger::getDeviceId() const
 {
     const char* deviceId = _deviceId;
@@ -133,11 +128,6 @@ const char* Logger::getDeviceId() const
         parentLogger = parentLogger->_parentLogger;
     }
     return deviceId;
-}
-
-void Logger::setLevel(LogLevel level)
-{
-    _level = level;
 }
 
 Logger::LogLevel Logger::getLevel() const
@@ -165,7 +155,7 @@ void Logger::logv(LogLevel level, const char* format, va_list ap) const
     if (level >= getLevel())
     {
         int len = vsnprintf(buffer, BUFLEN-1, format, ap);
-        _logHandlerPtr->write(level, getDeviceId(), gettag(), buffer, len);
+        _logHandlerPtr->write(level, getDeviceId(), _tag, buffer, len);
     }
 }
 

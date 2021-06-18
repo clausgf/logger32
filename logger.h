@@ -67,7 +67,7 @@ public:
      *                the memory managed by this pointer is always available 
      *                while using this Logger (i.e. do not put it on the stack).
      */
-    void setDeviceId(const char* deviceId);
+    void setDeviceId(const char* deviceId) { _deviceId = deviceId; }
 
     /**
      * Get the device id for this logger.
@@ -84,7 +84,7 @@ public:
     /**
      * Get the tag for this logger
      */
-    const char const* getTag() const { return _tag; }
+    const char* getTag() const { return _tag; }
 
     /**
      * Set log level, all output with a lower level is discarded.
@@ -130,8 +130,8 @@ public:
 private:
     LogLevel _level = NOTSET;
     const Logger* _parentLogger;
-    const char *_deviceId;
-    const char const *_tag;
+    const char* _deviceId;
+    const char* _tag;
     LogHandler* _logHandlerPtr;
 };
 
@@ -153,9 +153,9 @@ public:
      * Construct a LogHandler 
      * @param color  If `true`, use ANSI colors in the log output.
      */
-    LogHandler(bool color = true)
+    LogHandler(bool color = true);
     virtual ~LogHandler() {}
-    virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength) = 0;
+    virtual void write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength) = 0;
 
 protected:
     const char* colorStartStr(Logger::LogLevel level) const;
@@ -180,28 +180,9 @@ public:
      * @param color  If `true`, use ANSI colors in the log output.
      * @param baudRate  If baudRate != 0, initialize the serial interface.
      */
-    SerialLogHandler(unsigned long baudRate = 0);
+    SerialLogHandler(bool color = true, unsigned long baudRate = 0);
 
-    virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength);
-
-};
-
-// ***************************************************************************
-
-/**
- * Concrete LogHandler for a syslog server via UDP
- */
-class SyslogLogHandler: public LogHandler
-{
-public:
-    /**
-     * Construct a SyslogLogHandler 
-     * @param color  If `true`, use ANSI colors in the log output.
-     * @param baudRate  If baudRate != 0, initialize the serial interface.
-     */
-    SerialLogHandler(unsigned long baudRate = 0);
-
-    virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength);
+    virtual void write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength);
 
 };
 
