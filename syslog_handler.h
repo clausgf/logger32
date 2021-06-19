@@ -24,14 +24,14 @@ public:
      */
     SyslogHandler(bool color, String hostname, int port);
 
-    virtual void write(Logger::LogLevel level, const char *tag, const char *message, int messageLength);
+    virtual void write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength);
 
 private:
     String _hostname;
     int _port;
     WiFiUDP _wifiUdp;
-    static int _LEVEL_MAPPING[];
-    constexpr _FACILITY = 
+    static const int _LEVEL_MAPPING[];
+    static constexpr int _FACILITY = 1;
 };
 
 // ***************************************************************************

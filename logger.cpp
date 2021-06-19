@@ -30,6 +30,11 @@ const char* LogHandler::_COLOR_STRINGS[] =
     /*5:CRITICAL*/ "\u001b[35m", // magenta
 };
 
+LogHandler::LogHandler(bool color):
+    _color(color)
+{
+}
+
 const char* LogHandler::colorStartStr(Logger::LogLevel level) const
 {
     if (!_color)

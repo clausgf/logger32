@@ -4,10 +4,10 @@
  */
 
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
 
 #include <logger.h>
-
-
 
 
 auto logHandler = SerialLogHandler( 115200 );
@@ -36,7 +36,9 @@ static int counter = 0;
 
 void loop()
 {
-    childLogger.setLevel(Logger::LogLevel(10*(counter%6)));
+    Logger::LogLevel level = Logger::LogLevel(10*(counter%6));
+    Serial.printf("Changing childLogger log level to %d\n", level);
+    childLogger.setLevel(level);
 
     rootLogger.debug("This is debug message #d from the root logger", counter);
     rootLogger.info("This is info message #d", counter);

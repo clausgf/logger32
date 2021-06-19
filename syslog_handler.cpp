@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
+#include <freertos/FreeRTOS.h>
 //#else
 //    #error "Architecture/Framework is not supported. Supported: ESP32 (IDF and Arduino)"
 //#endif
@@ -18,7 +19,7 @@
 
 // ***************************************************************************
 
-const char* SyslogHandler::_LEVEL_MAPPING[] = 
+const int SyslogHandler::_LEVEL_MAPPING[] = 
 {
     /*0:UNDEFINED*/7, // reset
     /*1:DEBUG*/    7, // 7=debug
@@ -49,7 +50,7 @@ void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const ch
     }
     int pri = _FACILITY*8 + _LEVEL_MAPPING[level_index];
 
-    const char* task = xTaskGetName(NULL);
+    const char* task = pcTaskGetTaskName(NULL);
 
     constexpr int BUFLEN = 256;
     char msg[BUFLEN];
