@@ -76,28 +76,33 @@ SerialLogHandler::SerialLogHandler(bool color, unsigned long baudRate):
 void SerialLogHandler::write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength)
 {
     unsigned long ms = 0;
+    const char* task = NULL;
 #ifdef ARDUINO
     ms = millis();
+    task = pcTaskGetTaskName(NULL);
 #elif ESP32
     ms = xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
+    task = pcTaskGetTaskName(NULL);
 #endif
 
 #ifdef ARDUINO
     Serial.print(colorStartStr(level));
-    Serial.printf("%lu.%03lu:%02d:%s:%s:%s", 
+    Serial.printf("%lu.%03lu:%02d:%s:%s:%s:%s", 
         ms / 1000, ms % 1000, 
         level,
         deviceId == nullptr ? "" : deviceId,
         tag == nullptr ? "" : tag,
+        task == NULL ? "" : task,
         message);
     Serial.println(colorEndStr());
 #elif ESP32
-    printf("%s%lu.%03lu:%02d:%s:%s:%s%s\n", 
+    printf("%s%lu.%03lu:%02d:%s:%s:%s:%s%s\n", 
         colorStartStr(level),
         ms / 1000, ms % 1000, 
         level,
         deviceId == nullptr ? "" : deviceId,
         tag == nullptr ? "" : tag,
+        task == NULL ? "" : task,
         message,
         colorEndStr());
 #endif

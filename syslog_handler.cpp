@@ -43,6 +43,7 @@ void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const ch
 {
     unsigned long ms = millis();
 
+    // pri = facility + level
     int level_index = ((int) level) / 10;
     if (level_index >= sizeof(_LEVEL_MAPPING))
     {
@@ -50,13 +51,24 @@ void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const ch
     }
     int pri = _FACILITY*8 + _LEVEL_MAPPING[level_index];
 
+    // determine the time in (Zulu/UTC)
+    time_t now;
+    time(&now);
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    char time_str[64];
+    strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+
+    // determine the task name
     const char* task = pcTaskGetTaskName(NULL);
 
+    // create the log string
     constexpr int BUFLEN = 256;
     char msg[BUFLEN];
     int msgLen = snprintf(msg, BUFLEN-1, 
-        "<%d>1 - %s %s %s %s %lu.%03lu %s%s%s",
+        "<%d>1 %s %s %s %s %lu.%03lu %s%s%s",
         pri, 
+        time_str, 
         deviceId == nullptr ? "-" : deviceId,
         tag == nullptr ? "-" : tag,
         task == NULL ? "-" : task,
@@ -64,6 +76,8 @@ void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const ch
         colorStartStr(level),
         message,
         colorEndStr());
+
+    printf("%s\n", msg);
 
     _wifiUdp.beginPacket(_hostname.c_str(), _port);
     _wifiUdp.write((const uint8_t*) msg, msgLen);

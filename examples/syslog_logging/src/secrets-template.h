@@ -1,9 +1,7 @@
 /**
- * Logger for 32 Bit Microcontrollers
+ * Battery Monitor for ESP32
  * Copyright (c) 2021 clausgf@github. See LICENSE.md for legal information.
  */
-
-#pragma once
 
 #pragma once
 
