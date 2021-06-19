@@ -1,10 +1,4 @@
-Battery Monitor Example
-=======================
+Logger32 Example
+================
 
-- Measure an input voltage with the ADC directly and using BatteryMonitor
-- Publish the results via Serial and UDP (configure receiving computer in the `udpAddress` variable)
-- Create a secrets.h with your WiFi credentials
-- Display the results with
-  ```sh
-  nc -ul 10000
-  ```
+To run the example, use PlatformIO to flash & run the project. Then watch the serial monitor for the log output.
