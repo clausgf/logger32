@@ -79,9 +79,13 @@ void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const ch
 
     printf("%s\n", msg);
 
-    _wifiUdp.beginPacket(_hostname.c_str(), _port);
-    _wifiUdp.write((const uint8_t*) msg, msgLen);
-    _wifiUdp.endPacket();
+    // discard WiFi output if not connected
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        _wifiUdp.beginPacket(_hostname.c_str(), _port);
+        _wifiUdp.write((const uint8_t*) msg, msgLen);
+        _wifiUdp.endPacket();
+    }
 }
 
 // ***************************************************************************

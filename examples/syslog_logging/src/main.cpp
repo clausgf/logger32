@@ -13,7 +13,7 @@
 #include "secrets.h"
 
 
-static const char* SYSLOG_HOSTNAME = "192.168.178.20";
+static const char* SYSLOG_HOSTNAME = "141.41.35.161";
 static const int SYSLOG_PORT = 10000;
 static const char* NTP_SERVER = "pool.ntp.org";
 
