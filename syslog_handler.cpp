@@ -8,7 +8,6 @@
 //#ifdef ARDUINO
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiUdp.h>
 #include <freertos/FreeRTOS.h>
 //#else
 //    #error "Architecture/Framework is not supported. Supported: ESP32 (IDF and Arduino)"

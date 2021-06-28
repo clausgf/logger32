@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <WiFiUdp.h>
+
 #include "logger.h"
 
 
