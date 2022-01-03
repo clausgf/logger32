@@ -156,7 +156,7 @@ public:
      * The device id determination is dynamic to make a change in the 
      * root logger device id visible to all children inheriting from there.
      */
-    const char* getDeviceId() const { return };
+    const char* getDeviceId() const { return _deviceId; };
 
     virtual void write(Logger::LogLevel level, const char *tag, const char* format, va_list ap) = 0;
 
