@@ -5,13 +5,8 @@
 
 #include <cstdint>
 
-#ifdef ARDUINO
-    #include <Arduino.h>
-#elif ESP32
-    #include <FreeRTOS.h>
-#else
-    #error "Architecture/Framework is not supported. Supported: ESP32 (IDF and Arduino)"
-#endif
+#include <Arduino.h>
+#include <FreeRTOS.h>
 
 #include "logger.h"
 
@@ -31,8 +26,13 @@ const char* LogHandler::_COLOR_STRINGS[] =
 };
 
 LogHandler::LogHandler(bool color):
-    _color(color)
+    _color(color),
+    _deviceId(nullptr)
 {
+    const int ID_MAXLEN = 4+6*2+1;
+    static char id_buf[ID_MAXLEN];
+    snprintf(id_buf, ID_MAXLEN-1, "e32-%06llx", ESP.getEfuseMac());
+    _deviceId = id_buf;
 }
 
 const char* LogHandler::colorStartStr(Logger::LogLevel level) const
@@ -73,39 +73,27 @@ SerialLogHandler::SerialLogHandler(bool color, unsigned long baudRate):
     }
 }
 
-void SerialLogHandler::write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength)
+void SerialLogHandler::write(Logger::LogLevel level, const char *tag, const char* format, va_list ap)
 {
     unsigned long ms = 0;
     const char* task = NULL;
-#ifdef ARDUINO
-    ms = millis();
-    task = pcTaskGetTaskName(NULL);
-#elif ESP32
-    ms = xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
-    task = pcTaskGetTaskName(NULL);
-#endif
 
-#ifdef ARDUINO
+    ms = millis();
+    //ms = xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
+
     Serial.print(colorStartStr(level));
-    Serial.printf("%lu.%03lu:%02d:%s:%s:%s:%s", 
+    Serial.printf("%lu.%03lu:%02d:%s:%s:%s:", 
         ms / 1000, ms % 1000, 
         level,
-        deviceId == nullptr ? "" : deviceId,
-        tag == nullptr ? "" : tag,
+        _deviceId == nullptr ? "" : _deviceId,
         task == NULL ? "" : task,
-        message);
+        tag == nullptr ? "" : tag);
+
+    constexpr int BUFLEN = 256;
+    char buffer[BUFLEN];
+    int len = vsnprintf(buffer, BUFLEN-1, format, ap);
+    Serial.print(buffer);
     Serial.println(colorEndStr());
-#elif ESP32
-    printf("%s%lu.%03lu:%02d:%s:%s:%s:%s%s\n", 
-        colorStartStr(level),
-        ms / 1000, ms % 1000, 
-        level,
-        deviceId == nullptr ? "" : deviceId,
-        tag == nullptr ? "" : tag,
-        task == NULL ? "" : task,
-        message,
-        colorEndStr());
-#endif
 }
 
 // ***************************************************************************
@@ -113,7 +101,6 @@ void SerialLogHandler::write(Logger::LogLevel level, const char *deviceId, const
 Logger::Logger(const char* tag, LogHandler* logHandlerPtr):
     _level(NOTSET),
     _parentLogger(nullptr),
-    _deviceId(nullptr),
     _tag(tag), 
     _logHandlerPtr(logHandlerPtr)
 {
@@ -122,22 +109,9 @@ Logger::Logger(const char* tag, LogHandler* logHandlerPtr):
 Logger::Logger(const char* tag, const Logger& parentLogger):
     _level(NOTSET), 
     _parentLogger(&parentLogger),
-    _deviceId(nullptr),
     _tag(tag), 
     _logHandlerPtr(parentLogger._logHandlerPtr)
 {
-}
-
-const char* Logger::getDeviceId() const
-{
-    const char* deviceId = _deviceId;
-    const Logger* parentLogger = _parentLogger;
-    while (deviceId == nullptr && parentLogger != nullptr)
-    {
-        deviceId = parentLogger->_deviceId;
-        parentLogger = parentLogger->_parentLogger;
-    }
-    return deviceId;
 }
 
 Logger::LogLevel Logger::getLevel() const
@@ -154,9 +128,6 @@ Logger::LogLevel Logger::getLevel() const
 
 void Logger::logv(LogLevel level, const char* format, va_list ap) const
 {
-    constexpr int BUFLEN = 256;
-    char buffer[BUFLEN];
-
     if (_logHandlerPtr == nullptr)
     {
         return;
@@ -164,8 +135,7 @@ void Logger::logv(LogLevel level, const char* format, va_list ap) const
 
     if (level >= getLevel())
     {
-        int len = vsnprintf(buffer, BUFLEN-1, format, ap);
-        _logHandlerPtr->write(level, getDeviceId(), _tag, buffer, len);
+        _logHandlerPtr->write(level, _tag, const char* format, va_list ap);
     }
 }
 

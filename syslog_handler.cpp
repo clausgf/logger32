@@ -39,7 +39,7 @@ SyslogHandler::SyslogHandler(bool color, String hostname, int port):
 
 // syslog from https://www.rfc-editor.org/info/rfc5424
 // <PRI>1 TIMESTAMP HOSTNAME APPNAME PROCID MSGID MSG
-void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength)
+void SyslogHandler::write(Logger::LogLevel level, const char *tag, const char* format, va_list ap)
 {
     unsigned long ms = millis();
 
@@ -69,15 +69,15 @@ void SyslogHandler::write(Logger::LogLevel level, const char *deviceId, const ch
         "<%d>1 %s %s %s %s %lu.%03lu %s%s%s",
         pri, 
         time_str, 
-        deviceId == nullptr ? "-" : deviceId,
+        _deviceId == nullptr ? "-" : deviceId,
         tag == nullptr ? "-" : tag,
         task == NULL ? "-" : task,
         ms / 1000, ms % 1000, 
-        colorStartStr(level),
-        message,
-        colorEndStr());
+        colorStartStr(level));
+    msgLen += vsnprintf(&msg[msgLen], BUFLEN-1-msgLen, format, ap);
+    msgLen += snprintf(&msg[msgLen], BUFLEN-1-msgLen, colorEndStr());
 
-    printf("%s\n", msg);
+    printf("%s\n", msg); // TODO
 
     _wifiUdp.beginPacket(_hostname.c_str(), _port);
     _wifiUdp.write((const uint8_t*) msg, msgLen);

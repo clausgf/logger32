@@ -14,7 +14,7 @@
 
 
 static const char* SYSLOG_HOSTNAME = "192.168.178.20";
-static const int SYSLOG_PORT = 10000;
+static const int SYSLOG_PORT = 8514;
 static const char* NTP_SERVER = "pool.ntp.org";
 
 auto logHandler = SyslogHandler( /*color*/true, SYSLOG_HOSTNAME, SYSLOG_PORT );
@@ -77,5 +77,5 @@ void loop()
 
     counter++;
     rootLogger.info("Sleeping a while...");
-    delay(5000);
+    delay(60*1000);
 }
