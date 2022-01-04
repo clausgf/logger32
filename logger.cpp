@@ -75,23 +75,21 @@ SerialLogHandler::SerialLogHandler(bool color, unsigned long baudRate):
 
 void SerialLogHandler::write(Logger::LogLevel level, const char *tag, const char* format, va_list ap)
 {
-    unsigned long ms = 0;
-    const char* task = NULL;
-
-    ms = millis();
+    unsigned long ms = millis();
     //ms = xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
+    //const char* task = pcTaskGetTaskName(NULL);
 
     Serial.print(colorStartStr(level));
-    Serial.printf("%lu.%03lu:%02d:%s:%s:%s:", 
+    Serial.printf("%lu.%03lu:%02d:%s:%s:", 
         ms / 1000, ms % 1000, 
-        level,
+        static_cast<int>(level),
         _deviceId == nullptr ? "" : _deviceId,
-        task == NULL ? "" : task,
+//        task == NULL ? "" : task,
         tag == nullptr ? "" : tag);
 
     constexpr int BUFLEN = 256;
     char buffer[BUFLEN];
-    int len = vsnprintf(buffer, BUFLEN-1, format, ap);
+    vsnprintf(buffer, BUFLEN-1, format, ap);
     Serial.print(buffer);
     Serial.println(colorEndStr());
 }
@@ -99,7 +97,7 @@ void SerialLogHandler::write(Logger::LogLevel level, const char *tag, const char
 // ***************************************************************************
 
 Logger::Logger(const char* tag, LogHandler* logHandlerPtr):
-    _level(NOTSET),
+    _level(LogLevel::NOTSET),
     _parentLogger(nullptr),
     _tag(tag), 
     _logHandlerPtr(logHandlerPtr)
@@ -107,7 +105,7 @@ Logger::Logger(const char* tag, LogHandler* logHandlerPtr):
 }
 
 Logger::Logger(const char* tag, const Logger& parentLogger):
-    _level(NOTSET), 
+    _level(LogLevel::NOTSET), 
     _parentLogger(&parentLogger),
     _tag(tag), 
     _logHandlerPtr(parentLogger._logHandlerPtr)
@@ -118,7 +116,7 @@ Logger::LogLevel Logger::getLevel() const
 {
     LogLevel level = _level;
     const Logger* parentLogger = _parentLogger;
-    while (level == NOTSET && parentLogger != nullptr)
+    while (level == LogLevel::NOTSET && parentLogger != nullptr)
     {
         level = parentLogger->_level;
         parentLogger = parentLogger->_parentLogger;
@@ -135,7 +133,7 @@ void Logger::logv(LogLevel level, const char* format, va_list ap) const
 
     if (level >= getLevel())
     {
-        _logHandlerPtr->write(level, _tag, const char* format, va_list ap);
+        _logHandlerPtr->write(level, _tag, format, ap);
     }
 }
 
@@ -151,7 +149,7 @@ void Logger::critical(const char* format...) const
 {
     va_list args;
     va_start(args, format);
-    logv(CRITICAL, format, args);
+    logv(LogLevel::CRITICAL, format, args);
     va_end(args);
 }
 
@@ -159,7 +157,7 @@ void Logger::error(const char* format...) const
 {
     va_list args;
     va_start(args, format);
-    logv(ERROR, format, args);
+    logv(LogLevel::ERROR, format, args);
     va_end(args);
 }
 
@@ -167,7 +165,7 @@ void Logger::warn(const char* format...) const
 {
     va_list args;
     va_start(args, format);
-    logv(WARNING, format, args);
+    logv(LogLevel::WARNING, format, args);
     va_end(args);
 }
 
@@ -175,7 +173,7 @@ void Logger::info(const char* format...) const
 {
     va_list args;
     va_start(args, format);
-    logv(INFO, format, args);
+    logv(LogLevel::INFO, format, args);
     va_end(args);
 }
 
@@ -183,7 +181,7 @@ void Logger::debug(const char* format...) const
 {
     va_list args;
     va_start(args, format);
-    logv(DEBUG, format, args);
+    logv(LogLevel::DEBUG, format, args);
     va_end(args);
 }
 

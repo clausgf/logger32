@@ -41,6 +41,10 @@ SyslogHandler::SyslogHandler(bool color, String hostname, int port):
 // <PRI>1 TIMESTAMP HOSTNAME APPNAME PROCID MSGID MSG
 void SyslogHandler::write(Logger::LogLevel level, const char *tag, const char* format, va_list ap)
 {
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        return;
+    }
     unsigned long ms = millis();
 
     // pri = facility + level
@@ -66,10 +70,10 @@ void SyslogHandler::write(Logger::LogLevel level, const char *tag, const char* f
     constexpr int BUFLEN = 256;
     char msg[BUFLEN];
     int msgLen = snprintf(msg, BUFLEN-1, 
-        "<%d>1 %s %s %s %s %lu.%03lu %s%s%s",
+        "<%d>1 %s %s %s %s %lu.%03lu %s",
         pri, 
         time_str, 
-        _deviceId == nullptr ? "-" : deviceId,
+        _deviceId == nullptr ? "-" : _deviceId,
         tag == nullptr ? "-" : tag,
         task == NULL ? "-" : task,
         ms / 1000, ms % 1000, 
@@ -77,11 +81,15 @@ void SyslogHandler::write(Logger::LogLevel level, const char *tag, const char* f
     msgLen += vsnprintf(&msg[msgLen], BUFLEN-1-msgLen, format, ap);
     msgLen += snprintf(&msg[msgLen], BUFLEN-1-msgLen, colorEndStr());
 
-    printf("%s\n", msg); // TODO
-
+    //printf("%s\n", msg);
     _wifiUdp.beginPacket(_hostname.c_str(), _port);
-    _wifiUdp.write((const uint8_t*) msg, msgLen);
-    _wifiUdp.endPacket();
+    int bytesWritten = _wifiUdp.write((const uint8_t*) msg, msgLen);
+    bool ok = _wifiUdp.endPacket();
+
+    // Timing measurements 22-01-04 11:30:
+    // - printf(), but no UDP output: 6.8 ms/call
+    // - added UDP output: 6.954,6.920,7.007 ms/call
+    // - UDP output only: 1.442/1.454/1.533 ms/call
 }
 
 // ***************************************************************************

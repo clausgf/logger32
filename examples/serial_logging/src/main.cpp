@@ -1,5 +1,5 @@
 /**
- * Logger32 for 32 Bit Microcontrollers
+ * Logger for 32 Bit Microcontrollers
  * Copyright (c) 2021 clausgf@github. See LICENSE.md for legal information.
  */
 
@@ -24,7 +24,6 @@ auto anotherModule = AnotherModule();
 
 void setup()
 {
-    rootLogger.setDeviceId("MyDeviceId");
     Serial.println("----------------------------------------------");
     Serial.println("Finished startup");
     Serial.println("----------------------------------------------");
@@ -39,15 +38,14 @@ static int counter = 0;
 
 void loop()
 {
-
-    unsigned long startTime = millis();
+    unsigned long startTime = micros();
     rootLogger.debug("This is debug message %d from the root logger", counter);
     rootLogger.info("This is info message %d", counter);
     rootLogger.warn("This is warn message %d", counter);
     rootLogger.error("This is error message %d", counter);
     rootLogger.critical("This is critical message %d", counter);
-    unsigned long endTime = millis();
-    rootLogger.debug("Duration for 5 calls: %lu ms", (endTime-startTime));
+    unsigned long endTime = micros();
+    rootLogger.debug("Duration per call for 5 calls: %0.3f ms", (endTime-startTime)/5.0/1000.0);
 
     anotherModule.doSomething(counter);
 

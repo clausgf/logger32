@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <vector>>
+#include <vector>
 
 #include "logger.h"
 
@@ -19,7 +19,7 @@ class MultiLogHandler: public LogHandler
 {
 public:
     MultiLogHandler();
-    void addLogHandler(LogHandler *logHandlerPtr) { _logHandlerPtrs.add(logHandlerPtr); }
+    void addLogHandler(LogHandler *logHandlerPtr) { _logHandlerPtrs.push_back(logHandlerPtr); }
 
     virtual void write(Logger::LogLevel level, const char *tag, const char* format, va_list ap);
 

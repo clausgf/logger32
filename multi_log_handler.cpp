@@ -15,16 +15,13 @@ MultiLogHandler::MultiLogHandler():
 {
 }
 
-// syslog from https://www.rfc-editor.org/info/rfc5424
-// <PRI>1 TIMESTAMP HOSTNAME APPNAME PROCID MSGID MSG
 void MultiLogHandler::write(Logger::LogLevel level, const char *tag, const char* format, va_list ap)
 {
     for (auto &&it : _logHandlerPtrs)
     {
-        LogHandler *handlerPtr = *it;
-        if (handlerPtr != nullptr)
+        if (it != nullptr)
         {
-            handlerPtr->write(level, tag, format, ap);
+            it->write(level, tag, format, ap);
         }
     }
     
