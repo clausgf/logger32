@@ -9,6 +9,7 @@
 
 #include <logger.h>
 #include <syslog_handler.h>
+#include <multi_log_handler.h>
 
 #include "secrets.h"
 
@@ -17,8 +18,10 @@ static const char* SYSLOG_HOSTNAME = "192.168.178.20";
 static const int SYSLOG_PORT = 10000; // 8514;
 static const char* NTP_SERVER = "pool.ntp.org";
 
-auto logHandler = SyslogHandler( /*color*/true, SYSLOG_HOSTNAME, SYSLOG_PORT );
-Logger rootLogger = Logger( /*tag*/"main", &logHandler );
+auto serialHandler = SerialLogHandler( /*color*/true, /*baudRate*/115200 );
+auto syslogHandler = SyslogHandler( /*color*/true, SYSLOG_HOSTNAME, SYSLOG_PORT );
+auto multiLogHandler = MultiLogHandler();
+Logger rootLogger = Logger( /*tag*/"main", &multiLogHandler );
 String myHostname;
 
 
@@ -30,7 +33,6 @@ void setup()
 {
     delay(500);  // wait for serial interface to get up
 
-    Serial.begin(115200);
     Serial.println("----------------------------------------------");
     Serial.println("Startup");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -42,7 +44,6 @@ void setup()
     Serial.printf("\nConnected to %s\n", WIFI_SSID);
     Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
 
-    Serial.printf("NTP server: %s\n", NTP_SERVER);
     configTime(0, 0, NTP_SERVER);
 
     const int ID_MAXLEN = 20;
@@ -51,10 +52,14 @@ void setup()
     myHostname = String(id_buf);
     Serial.printf("Hostname: %s\n", myHostname.c_str());
 
+    multiLogHandler.addLogHandler(&syslogHandler);
+    multiLogHandler.addLogHandler(&serialHandler);
+    
     Serial.println("----------------------------------------------");
     Serial.println("Finished startup");
     Serial.println("----------------------------------------------");
     delay(1000);
+
 }
 
 

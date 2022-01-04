@@ -26,7 +26,7 @@ public:
      */
     SyslogHandler(bool color, String hostname, int port);
 
-    virtual void write(Logger::LogLevel level, const char *deviceId, const char *tag, const char *message, int messageLength);
+    virtual void write(Logger::LogLevel level, const char *tag, const char* format, va_list ap);
 
 private:
     String _hostname;

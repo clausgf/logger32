@@ -1,5 +1,5 @@
 /**
- * Logger32 for 32 Bit Microcontrollers
+ * Logger for 32 Bit Microcontrollers
  * Copyright (c) 2021 clausgf@github. See LICENSE.md for legal information.
  */
 
