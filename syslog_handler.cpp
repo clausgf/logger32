@@ -81,9 +81,11 @@ void SyslogHandler::write(Logger::LogLevel level, const char *tag, const char* f
     msgLen += snprintf(&msg[msgLen], BUFLEN-1-msgLen, colorEndStr());
 
     //printf("%s\n", msg);
-    _wifiUdp.beginPacket(_hostname.c_str(), _port);
-    int bytesWritten = _wifiUdp.write((const uint8_t*) msg, msgLen);
-    bool ok = _wifiUdp.endPacket();
+    if (_wifiUdp.beginPacket(_hostname.c_str(), _port))
+    {
+        _wifiUdp.write((const uint8_t*) msg, msgLen);
+        _wifiUdp.endPacket();
+    }
 
     // Timing measurements 22-01-04 11:30:
     // - printf(), but no UDP output: 6.8 ms/call
