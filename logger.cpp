@@ -6,7 +6,7 @@
 #include <cstdint>
 
 #include <Arduino.h>
-#include <FreeRTOS.h>
+#include <freertos/FreeRTOS.h>
 
 #include "logger.h"
 
