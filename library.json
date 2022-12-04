@@ -1,6 +1,6 @@
 {
     "name": "logger32",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "C++ Logger for small (but not tiny) 32 Bit Microcontrollers like the ESP32",
     "keywords": "logging, logger, esp32",
     "repository":
@@ -19,6 +19,7 @@
     "license": "MIT",
     "homepage": "https://github.com/clausgf/logger32/",
     "dependencies": {
+        "WiFi": "*"
     },
     "frameworks": ["arduino", "espidf"],
     "platforms": "*"
